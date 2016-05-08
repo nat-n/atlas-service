@@ -1,0 +1,34 @@
+{
+  "name": "shapeset-ingester",
+  "runtime": "babel",
+  "description": "Serverless Lambda function for project: atlas-service",
+  "customName": false,
+  "customRole": false,
+  "handler": "handler.default",
+  "timeout": 59,
+  "memorySize": 1024,
+  "authorizer": {},
+  "custom": {
+    "excludePatterns": []
+  },
+  "endpoints": [],
+  "events": [
+    {
+      "name" : "newShapesetUploaded",
+      "type": "s3",
+      "config": {
+        "bucket": "shapeset",
+        "bucketEvents": ["s3:ObjectCreated:*"]
+      }
+    }
+  ],
+  "environment": {
+    "SERVERLESS_PROJECT": "${project}",
+    "SERVERLESS_STAGE": "${stage}",
+    "SERVERLESS_REGION": "${region}"
+  },
+  "vpc": {
+    "securityGroupIds": [],
+    "subnetIds": []
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "atlas-service",
+  "custom" : {
+    "client": {
+      "bucketName": "neuroanatomist.org"
+    }
+  },
+  "plugins": [
+    "serverless-client-s3",
+    "serverless-runtime-babel",
+    "serverless-serve",
+    "serverless-client-s3",
+    "serverless-lambda-prune-plugin"
+  ]
+}

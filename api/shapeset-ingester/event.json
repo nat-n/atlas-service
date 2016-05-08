@@ -1,0 +1,36 @@
+{
+  "Records": [
+    {
+      "eventVersion": "2.0",
+      "eventSource": "aws:s3",
+      "awsRegion": "eu-west-1",
+      "eventTime": "2016-04-24T17:53:56.285Z",
+      "eventName": "ObjectCreated:Put",
+      "userIdentity": {
+        "principalId": "EXAMPLE"
+      },
+      "requestParameters": { "sourceIPAddress": "127.0.0.1" },
+      "responseElements": {
+        "x-amz-request-id": "EXAMPLE123456789",
+        "x-amz-id-2": "EXAMPLE123/5678abcdefghijklambdaisawesome/mnopqrstuvwxyzABCDEFGH"
+      },
+      "s3": {
+        "s3SchemaVersion": "1.0",
+        "configurationId": "testConfigRule",
+        "bucket":  {
+          "name": "shapesets",
+          "ownerIdentity": {
+            "principalId": "EXAMPLE"
+          },
+          "arn": "arn:aws:s3:::shapesets"
+        },
+        "object":  {
+          "key": "_import/shape_setzz.json",
+          "size": 433218,
+          "eTag": "8e43e379a48a60fc825f07303e0a40f0",
+          "sequencer": "00571D0B03EB00969F"
+        }
+      }
+    }
+  ]
+}
