@@ -8,7 +8,7 @@ const {
   listShapesets, listVersions, resolveVersion,
   loadObj, writeObj, checkObj,
   configureAws
-} = require('../../../lib/shapeset-helpers.js');
+} = require('../lib/shapeset-helpers.js');
 
 const {
   REGION,
@@ -16,7 +16,7 @@ const {
   RESPONSE_BUCKET_NAME,
   RESPONSE_BUCKET_URL,
   MAX_RESPONSE_SIZE
-} = require('../../../lib/config.js');
+} = require('../lib/config.js');
 
 function shapesetIndex(context) {
   listShapesets(SHAPESET_BUCKET_NAME)
@@ -106,7 +106,7 @@ function shapesetMeshes(name, version, meshIdsStr, context) {
   });
 }
 
-module.exports.handler = (event, context) => {
+export default (event, context) => {
   // TODO: 404 for invalid shapeset or version
 
   configureAws(event);

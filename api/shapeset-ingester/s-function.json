@@ -4,7 +4,7 @@
   "description": "Serverless Lambda function for project: atlas-service",
   "customName": false,
   "customRole": false,
-  "handler": "handler.default",
+  "handler": "shapeset-ingester/handler.default",
   "timeout": 59,
   "memorySize": 1024,
   "authorizer": {},

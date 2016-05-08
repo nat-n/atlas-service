@@ -1,7 +1,11 @@
 'use strict';
 
 var Promise = require('bluebird');
-const {loadObj, writeObj, createManifest} = require('../../../lib/shapeset-helpers.js');
+const {
+  loadObj,
+  writeObj,
+  createManifest
+} = require('../lib/shapeset-helpers.js');
 
 const importShapeset = (bucket) => (shapeset) => {
   const {name, meshes} = shapeset;
@@ -35,6 +39,8 @@ const importShapeset = (bucket) => (shapeset) => {
 export default (event, context) => {
   const bucket = event.Records[0].s3.bucket.name;
   const key = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, ' '));
+
+  console.info("Responing to put at:", key);
 
   loadObj(bucket, key)
     .then(importShapeset(bucket))

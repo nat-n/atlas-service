@@ -4,7 +4,7 @@
   "description": "serves shapesets",
   "customName": false,
   "customRole": false,
-  "handler": "handler.handler",
+  "handler": "shapesets/handler.default",
   "timeout": 15,
   "memorySize": 960,
   "authorizer": {},
