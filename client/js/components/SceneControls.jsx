@@ -93,6 +93,13 @@ const mapDispatchToProps = (dispatch, ownProps) => {
         sceneId: ownProps.sceneId,
         region
       });
+    },
+    toggleRegionVisibility(region) {
+      dispatch({
+        type: 'TOGGLE_REGION_VISIBILITY',
+        sceneId: ownProps.sceneId,
+        region
+      });
     }
   };
 };
@@ -117,11 +124,23 @@ const SceneControls = React.createClass({
     }
   },
 
+  destroyRegion() {
+    if (this.state.activeRegionName) {
+      this.props.destroyRegion(this.activeRegion());
+    }
+  },
+
+  toggleRegionVisibility() {
+    if (this.state.activeRegionName) {
+      this.props.toggleRegionVisibility(this.activeRegion());
+    }
+  },
+
   selectRegion(regionName) {
     this.setState({'activeRegionName': regionName});
   },
 
-  activeRegion(ss) {
+  activeRegion() {
     return this.props.regions.get(this.state.activeRegionName);
   },
 
@@ -143,7 +162,6 @@ const SceneControls = React.createClass({
     var thisVersionsSeq = this.props.versions.valueSeq();
     var nextVersionsSeq = nextProps.versions.valueSeq();
     if (this.props.versions !== nextProps.versions) {
-      console.log("IT CHANGED")
       this.props.setVersion(nextProps.versions.get(0));
     }
 
@@ -153,10 +171,7 @@ const SceneControls = React.createClass({
       this.props.setVersion(this.props.activeVersion, latestBuild);
     }
 
-
-    var regions = this.props.regions;
-    if (!this.props.regions.has(this.state.activeRegionName)) {
-    // if (regions != nextProps.regions) {
+    if (!nextProps.regions.has(this.state.activeRegionName)) {
       let firstRegion = nextProps.regions.toArray()[0];
       if (firstRegion) {
         this.selectRegion(firstRegion.name);
@@ -167,6 +182,8 @@ const SceneControls = React.createClass({
   },
 
   render() {
+    var activeRegion = this.activeRegion();
+    var activeRegionVisibilityLabel = activeRegion && activeRegion.visible ? 'hide' : 'show';
     return (
       <div style={{borderRadius: '2px',backgroundColor:'#ccc'}}>
         <div>
@@ -191,8 +208,13 @@ const SceneControls = React.createClass({
             </form>
           </span>
           <span>
-            <button onClick={this.props.toggleTeapot(this.props.sceneId)}>
-              {this.props.isTeatime ? '√' : 'x'} Tea Time!
+            <button onClick={this.destroyRegion}>
+              Destroy Region
+            </button>
+          </span>
+          <span>
+            <button onClick={this.toggleRegionVisibility}>
+              {activeRegionVisibilityLabel}
             </button>
           </span>
         </div>
@@ -213,15 +235,13 @@ const SceneControls = React.createClass({
     this.props.regions.forEach((otherRegion) => {
       if (otherRegion.name !== this.state.activeRegionName) {
         this.props.shapes.forEach((shape) => {
-          // TODO: not this, once we've solves the shape cloning mystery
+          // TODO: not this, once we've solved the shape cloning mystery
           if (otherRegion.hasShape(shape)) {
             shapesInOtherRegions.add(shape);
           }
         });
       }
     });
-
-    console.log(this.props.shapes)
 
     return this.props.shapes
       .filter((s) => !shapesInOtherRegions.has(s))
@@ -230,7 +250,7 @@ const SceneControls = React.createClass({
 
   shapeToggle(shape) {
     var activeRegion = this.activeRegion();
-    var styles = {float: 'left', marginRight: '3px'};
+    var styles = { float: 'left', marginRight: '3px' };
     if (activeRegion && activeRegion.hasShape(shape)) {
       styles.backgroundColor = 'blue';
     }

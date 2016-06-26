@@ -1,4 +1,5 @@
 import React from 'react';
+import SceneThree from './SceneThree.jsx'
 import SceneCanvas from './SceneCanvas.jsx'
 import SceneControls from './SceneControls.jsx'
 

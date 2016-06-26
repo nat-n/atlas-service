@@ -33,8 +33,6 @@ const mapDispatchToProps = (dispatch) => {
 class SceneCanvas extends React.Component {
   constructor(props) {
     super(props);
-    this.registerScene = props.registerScene;
-    this.regionNodes = new Map();;
   }
 
   componentDidMount() {
@@ -43,7 +41,7 @@ class SceneCanvas extends React.Component {
       nodes:[]
     });
 
-    this.registerScene(this.props.sceneId);
+    this.props.registerScene(this.props.sceneId);
 
     this.scene.addNode({
       type: "cameras/orbit",
@@ -75,34 +73,30 @@ class SceneCanvas extends React.Component {
       this.updateTeatime(nextSceneState);
     }
 
-    // TODO: check for changes to regions,
-    // - remove no longer present regions from scene
-    // - initialise new regions in scene
     if (this.props.regions !== nextProps.regions) {
       let removedRegions = [];
       let addedRegions = [];
+
       nextProps.regions.forEach((region, regionName) => {
-        if (!this.props.regions.has(regionName)) {
+        if (!this.props.regions.has(regionName) && region.visible) {
           addedRegions.push(region);
         }
       });
+
       this.props.regions.forEach((region, regionName) => {
-        if (!nextProps.regions.has(regionName)) {
-          removedRegions.push(region);
-        } else if (nextProps.regions.get(regionName) !== region) {
-          removedRegions.push(region);
-          addedRegions.push(nextProps.regions.get(regionName));
+        if (nextProps.regions.has(regionName)) {
+          var nextRegion = nextProps.regions.get(regionName);
+          if (nextRegion !== region) {
+            removedRegions.push(region);
+            if (nextRegion.visible) {
+              addedRegions.push(nextProps.regions.get(regionName));
+            }
+          }
         }
       });
 
-
-      removedRegions.forEach((region) => {
-        this.removeRegion(region);
-      });
-
-      addedRegions.forEach((region) => {
-        this.addRegion(region);
-      });
+      removedRegions.forEach(this.removeRegion.bind(this));
+      addedRegions.forEach(this.addRegion.bind(this));
     }
   }
 
@@ -118,6 +112,7 @@ class SceneCanvas extends React.Component {
   }
 
   addRegion(region) {
+    console.log("add region to SceneCanvas", region)
     region.asMesh.then((mesh) => {
       console.log('mesh', mesh);
       this.scene.getNode('baseNode', (n) => n.addNode({

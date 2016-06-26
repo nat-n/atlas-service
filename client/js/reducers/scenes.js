@@ -33,6 +33,9 @@ export const reducer = (state, action) => {
     case 'TOGGLE_SHAPE':
       return state.set(action.sceneId, reduceScene(state.get(action.sceneId), action));
 
+    case 'TOGGLE_REGION_VISIBILITY':
+      return state.set(action.sceneId, reduceScene(state.get(action.sceneId), action));
+
     default:
       return state;
   }
@@ -77,7 +80,7 @@ function reduceScene(sceneState, action) {
 
     case 'DESTORY_REGION':
       action.region.destroy();
-      return sceneState.deleteIn(['regions', shapeset, fullVersionStr], action.region);
+      return sceneState.deleteIn(['regions', shapeset, fullVersionStr, action.region.name]);
 
     case 'TOGGLE_SHAPE':
       // replace region with modified region
@@ -86,10 +89,19 @@ function reduceScene(sceneState, action) {
       return sceneState.setIn(
         ['regions', shapeset, fullVersionStr, action.region.name],
         updatedRegion)
+
+    case 'TOGGLE_REGION_VISIBILITY':
+      // replace region with modified region
+      var updatedRegion = action.region.toggleVisibility();
+      action.region.destroy();
+      return sceneState.setIn(
+        ['regions', shapeset, fullVersionStr, action.region.name],
+        updatedRegion)
+
   }
   return sceneState;
 }
 
-function newRegion(name, shapeset, version, ac) {
-  return new AtlasClient.Region(name, shapeset, version, [], ac);
+function newRegion(name, shapeset, version, client) {
+  return new AtlasClient.Region(name, shapeset, version, [], {client});
 }

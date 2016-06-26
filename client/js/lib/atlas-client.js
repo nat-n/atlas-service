@@ -23,14 +23,16 @@ class ShapeSet {
 
 class Region {
   // intended to be transient, main purpose being to get a mesh out
-  constructor(name, shapeset, version, shapes=[], client=new AtlasClient(), dataRequest) {
-    this.name = name;
+  constructor(name, shapeset, version, shapes=[], {client=new AtlasClient(), dataRequest, visible=true}) {
+    this.name     = name;
     this.shapeset = shapeset;
-    this.version = version;
-    this.shapes = Object.freeze(shapes.slice(0));
-    this.client = client;
-    this.asMesh = dataRequest || this._initData(); // .then??
-    this.meshes = [];
+    this.version  = version;
+    this.shapes   = Object.freeze(shapes.slice(0));
+    this.visible  = visible;
+    this.color    = [0.5, 0.5, 0.5, 1];
+    this._client  = client;
+    this.asMesh  = dataRequest || this._initData(); // .then??
+    this.meshes   = [];
   }
 
   _initData() {
@@ -42,7 +44,7 @@ class Region {
       });
     }
 
-    return this.client.getShapeset(this.shapeset, this.version)
+    return this._client.getShapeset(this.shapeset, this.version)
       .then(({name, version, shapes}) => {
         if (this.distroyed) {
           return;
@@ -51,7 +53,7 @@ class Region {
 
         var regionMembers = {};
         this.shapes.forEach((shape) => {
-          // var shape = this.client.fromCache(name, version).shapesByLabel[shapeLabel];
+          // var shape = this._client.fromCache(name, version).shapesByLabel[shapeLabel];
           regionMembers[shape.id] = shape.neighbours;
         });
         for (let shapeId in regionMembers) {
@@ -63,11 +65,8 @@ class Region {
           });
         }
 
-        return this.client.getMeshes(name, version, meshes);
+        return this._client.getMeshes(name, version, meshes);
       }).then(({meshes}) => {
-
-        console.log("gotMeshes", meshes);
-
         if (this.distroyed) {
           return;
         }
@@ -78,167 +77,99 @@ class Region {
   }
 
   static _compose(regionShapes, meshes) {
-        var vPositions          = [],
-            vNormals            = [],
-            fIndices            = [],
-            fNormals            = {},
-            borders             = {},
-            allBorderVerts      = {};
+    var vPositions          = [],
+        vNormals            = [],
+        fIndices            = [],
+        fNormals            = {},
+        borders             = {},
+        allBorderVerts      = {};
 
+    var allVerts = {};
+    var borderNormals = {};
 
-        var allVerts = {};
+    meshes.forEach(function (mesh) {
+      var i, vi, vi3, bi, len, averageNormal,
+          meshBorderVerts = new Set(), // indices of all border vertices in mesh
+          // map border indices in mesh onto corresponding indices in vPositions
+          indexMap = {};
 
-        var borderNormals = {};
+      // build meshBorderVerts and indexMap
+      for (bi in mesh.borders) {
+        if (bi in borders) {
+          for (i = 0, len = mesh.borders[bi].length; i < len; i++) {
+            meshBorderVerts.add(mesh.borders[bi][i]);
+            indexMap[mesh.borders[bi][i]] = borders[bi][i];
+          }
+        }
+      }
 
-        meshes.forEach(function (mesh) {
-            var i, vi, vi3, bi, len, averageNormal,
-                meshBorderVerts = new Set(), // indices of all border vertices in mesh
-            // map border indices in mesh onto corresponding indices in vPositions
-                indexMap = {};
+      // dertmine whether this mesh is natural to the region or needs inverting
+      var mustInvert = regionShapes.indexOf(mesh.name.split('-')[0]) != -1;
 
-            // build meshBorderVerts and indexMap
-            for (bi in mesh.borders) {
-                if (bi in borders) {
-                    for (i = 0, len = mesh.borders[bi].length; i < len; i++) {
-                        meshBorderVerts.add(mesh.borders[bi][i]);
-                        indexMap[mesh.borders[bi][i]] = borders[bi][i];
-                        // allBorderVerts[borders[bi][i]] = [];
-                    }
-                }
-            }
+      // keep track of which index should be assigned to the next vertex
+      var newIndex = vPositions.length / 3 - 1;
+      for (vi = 0, len = mesh.verts.length / 3; vi < len; vi++) {
+        // only copy over non-border vertices
+        if (!meshBorderVerts.has(vi)) {
+          // reindex remaining vertices
+          indexMap[vi] = (newIndex += 1);
+          // copy over vertices and normals
+          vi3 = vi * 3;
+          vPositions.push(mesh.verts[vi3],
+                          mesh.verts[vi3+1],
+                          mesh.verts[vi3+2]);
+          // ensure normals face outwards
+          if (mustInvert) {
+            vNormals.push(-mesh.norms[vi3],
+                          -mesh.norms[vi3+1],
+                          -mesh.norms[vi3+2]);
+          } else {
+            vNormals.push(mesh.norms[vi3],
+                          mesh.norms[vi3+1],
+                          mesh.norms[vi3+2]);
+          }
+        }
+      }
 
-            // dertmine whether this mesh is natural to the region or needs inverting
-            var mustInvert = regionShapes.indexOf(mesh.name.split('-')[0]) != -1;
+      var fA, fB, fC, fA3, fB3, fC3, fNormal, fX,
+          aIsBorder = false,
+          bIsBorder = false,
+          cIsBorder = false,
+          borderFaceNormals = {};
+      for (i = 0, len = mesh.faces.length; i < len; i += 3) {
+        fA = indexMap[mesh.faces[i]];
+        fB = indexMap[mesh.faces[i+1]];
+        fC = indexMap[mesh.faces[i+2]];
 
-            // keep track of which index should be assigned to the next vertex
-            var newIndex = vPositions.length / 3 - 1;
-            for (vi = 0, len = mesh.verts.length / 3; vi < len; vi++) {
-                // only copy over non-border vertices
-                if (meshBorderVerts.has(vi)) {
-                    // if (mustInvert) {
-                    //     allBorderVerts[indexMap[vi]].push(mesh.verts[vi3],
-                    //                                       mesh.verts[vi3+1],
-                    //                                       mesh.verts[vi3+2])
-                    // } else {
-                    //     allBorderVerts[indexMap[vi]].push(-mesh.verts[vi3],
-                    //                                       -mesh.verts[vi3+1],
-                    //                                       -mesh.verts[vi3+2])
-                    // }
-                } else {
-                    // reindex remaining vertices
-                    indexMap[vi] = (newIndex += 1);
-                    // copy over vertices and normals
-                    vi3 = vi * 3;
-                    vPositions.push(mesh.verts[vi3],
-                                    mesh.verts[vi3+1],
-                                    mesh.verts[vi3+2]);
-                    // ensure normals face outwards
-                    if (mustInvert) {
-                        vNormals.push(-mesh.norms[vi3],
-                                      -mesh.norms[vi3+1],
-                                      -mesh.norms[vi3+2]);
-                    } else {
-                        vNormals.push(mesh.norms[vi3],
-                                      mesh.norms[vi3+1],
-                                      mesh.norms[vi3+2]);
-                    }
-                }
-            }
+        if (mustInvert) {
+            fX = fA;
+            fA = fB;
+            fB = fX;
+        }
 
+        fA3 = fA * 3 + 1;
+        fB3 = fB * 3 + 1;
+        fC3 = fC * 3 + 1;
 
-            // for (vi = 0, len = mesh.verts.length / 3; vi < len; vi++) {
-            //     allVerts[indexMap[vi]] = [];
-            // }
+        fIndices.push(fA, fB, fC);
+      }
 
+      // remap and copy borders from mesh.borders to borders
+      for (bi in mesh.borders) {
+        if (!(bi in borders)) {
+          borders[bi] = [];
+          for (i = 0, len = mesh.borders[bi].length; i < len; i++) {
+            borders[bi].push(indexMap[mesh.borders[bi][i]]);
+          }
+        }
+      }
+    });
 
-            var fA, fB, fC, fA3, fB3, fC3, fNormal, fX,
-                aIsBorder = false,
-                bIsBorder = false,
-                cIsBorder = false,
-                borderFaceNormals = {};
-            for (i = 0, len = mesh.faces.length; i < len; i += 3) {
-                fA = indexMap[mesh.faces[i]];
-                fB = indexMap[mesh.faces[i+1]];
-                fC = indexMap[mesh.faces[i+2]];
-
-                if (mustInvert) {
-                    fX = fA;
-                    fA = fB;
-                    fB = fX;
-                }
-
-                fA3 = fA * 3 + 1;
-                fB3 = fB * 3 + 1;
-                fC3 = fC * 3 + 1;
-
-                // fNormals[i] = calculateFaceNormal(
-                //     [vPositions[fA3], vPositions[fA3+2], vPositions[fA3+1]],
-                //     [vPositions[fB3], vPositions[fB3+2], vPositions[fB3+1]],
-                //     [vPositions[fC3], vPositions[fC3+2], vPositions[fC3+1]]
-                // );
-
-                // allVerts[fA].push(i);
-                // allVerts[fB].push(i);
-                // allVerts[fC].push(i);
-
-                fIndices.push(fA, fB, fC);
-            }
-            /*
-            // calculate all vertexNormals!
-            var fi, vfNormals, avgNormal;
-            for (vi = 0, len = mesh.verts.length / 3; vi < len; vi++) {
-
-                vfNormals = [];
-                for (i = 0; i < allVerts[vi].length; i++) {
-                    fi = allVerts[vi][i];
-                    vfNormals.push(fNormals[fi]);
-                }
-                avgNormal = averageNormals(vfNormals);
-                vNormals.push(avgNormal[0], avgNormal[1], avgNormal[2]);
-            }
-                */
-
-            // remap and copy borders from mesh.borders to borders
-            for (bi in mesh.borders) {
-                if (!(bi in borders)) {
-                    borders[bi] = [];
-                    for (i = 0, len = mesh.borders[bi].length; i < len; i++) {
-                        borders[bi].push(indexMap[mesh.borders[bi][i]]);
-                    }
-                }
-            }
-        });
-
-
-function downloadOBJ(vertices, normals, faces) {
-    var i, obj_data = '';
-
-    for (i = 0; i < vertices.length; i+=3) {
-        obj_data += 'v ' + vertices[i] + ' ' + vertices[i+1] + ' ' + vertices[i+2] + "\n"
-    }
-
-    for (i = 0; i < normals.length; i+=3) {
-        obj_data += 'vn ' + normals[i] + ' ' + normals[i+1] + ' ' + normals[i+2] + "\n"
-    }
-
-    for (i = 0; i < faces.length; i+=3) {
-        obj_data += 'f ' + (faces[i]+1) + ' ' + (faces[i+1]+1) + ' ' + (faces[i+2]+1) + "\n"
-    }
-
-    var a = window.document.createElement('a');
-    a.href = window.URL.createObjectURL(new Blob([obj_data], {type: 'application/data'}));
-    a.download = 'test.obj';
-    a.click();
-}
-
-        window.download = () => downloadOBJ(vPositions, vNormals, fIndices);
-        return {
-            vertex_positions: vPositions,
-            vertex_normals: vNormals,
-            faces: fIndices
-        };
-
-// -- -- --- -- --
+    return {
+      vertex_positions: vPositions,
+      vertex_normals: vNormals,
+      faces: fIndices
+    };
   }
 
   static toMeshId(shapeId1, shapeId2) {
@@ -248,20 +179,6 @@ function downloadOBJ(vertices, normals, faces) {
       return `${shapeId2}-${shapeId1}`;
     }
   }
-
-
-  // asMesh() { // for lazy eval/composition of mesh?
-  //   if (!this._meshPromise) {
-  //     // this._meshPromise = new Promise((resolve, reject) => {
-
-  //       // this.client.getMeshes(this.shapeset, this.version, this.meshes)
-
-  //       // TODO: resolve with a mesh data object
-
-  //     // });
-  //   }
-  //   return this._meshPromise;
-  // }
 
   hasShape(shape) {
     return this.indexOfShape(shape) >= 0;
@@ -291,12 +208,28 @@ function downloadOBJ(vertices, normals, faces) {
       this.shapeset,
       this.version,
       updatedShapes,
-      this.client,
-      this.dataRequest);
+      {
+        client: this._client,
+        dataRequest: this._dataRequest,
+        visible: this.visible
+      });
+  }
+
+  toggleVisibility() {
+    return new this.constructor(
+      this.name,
+      this.shapeset,
+      this.version,
+      this.shapes,
+      {
+        client: this._client,
+        dataRequest: this._dataRequest,
+        visible: !this.visible
+      });
   }
 
   destroy() {
-    // TODO: cleanup promise and stuff?
+    // TODO: cleanup pending promises and stuff?
     this.distroyed = true;
   }
 }
@@ -312,7 +245,7 @@ class AtlasClient {
   constructor(baseUrl) {
     this._baseUrl = baseUrl;
 
-    // TODO: cache shapesets and versions in memory
+    // TODO: cache shapesets and versions in heap
 
     this._initIndexedDB();
 
