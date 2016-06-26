@@ -9,7 +9,10 @@
   "memorySize": 960,
   "authorizer": {},
   "custom": {
-    "excludePatterns": []
+    "excludePatterns": [],
+    "cors": {
+      "allowOrigin": "*"
+    }
   },
   "endpoints": [
     {

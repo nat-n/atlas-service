@@ -7,6 +7,7 @@
   },
   "plugins": [
     "serverless-client-s3",
+    "serverless-cors-plugin",
     "serverless-runtime-babel",
     "serverless-serve",
     "serverless-client-s3",

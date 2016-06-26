@@ -36,6 +36,9 @@ SceneJS.Types.addType("cameras/orbit", {
         var zoom = params.zoom || 10;
         var minPitch = params.minPitch;
         var maxPitch = params.maxPitch;
+        var minZoom = params.minZoom;
+        var maxZoom = params.maxZoom;
+
         var zoomSensitivity = params.zoomSensitivity || 1.0;
 
         var lastX;
@@ -46,7 +49,7 @@ SceneJS.Types.addType("cameras/orbit", {
         var eye = params.eye || { x: 0, y: 0, z: 0 };
         var look = params.look || { x: 0, y: 0, z: 0};
 
-        lookat.set({
+        lookat.setData({
             eye: { x: eye.x, y: eye.y, z: -zoom },
             look: { x: look.x, y: look.y, z: look.z },
             up: { x: 0, y: 1, z: 0 }
@@ -154,13 +157,16 @@ SceneJS.Types.addType("cameras/orbit", {
         canvas.addEventListener('DOMMouseScroll', mouseWheel, true);
 
         function update() {
-
             if (minPitch != undefined && pitch < minPitch) {
                 pitch = minPitch;
+            } else if (maxPitch != undefined && pitch > maxPitch) {
+                pitch = maxPitch;
             }
 
-            if (maxPitch != undefined && pitch > maxPitch) {
-                pitch = maxPitch;
+            if (minZoom != undefined && zoom < minZoom ) {
+                zoom = minZoom;
+            } else if (minZoom != undefined && zoom > maxZoom) {
+                zoom = maxZoom;
             }
 
             var eye = [0, 0, zoom];

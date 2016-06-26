@@ -1,0 +1,6 @@
+[include]
+<PROJECT_ROOT>/api/*
+<PROJECT_ROOT>/client/*
+
+[ignore]
+<PROJECT_ROOT>/node_modules/*

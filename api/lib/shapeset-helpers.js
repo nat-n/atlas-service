@@ -98,6 +98,9 @@ export function listVersions(Bucket, shapesetName) {
 export function resolveVersion(bucket, name, version) {
   return listVersions(bucket, name)
     .then((versions) => {
+      if (versions.indexOf(version) >= 0) {
+        return Promise.resolve(version);
+      }
       var matches = versions.filter((v) => v.split('+')[0] === version).sort()
       return Promise.resolve(matches[matches.length - 1]);
     });
@@ -110,6 +113,7 @@ export function createManifest(shapeset) {
   for (var shapeId in shapes) {
     shapesById[shapeId] = {
       id: shapeId,
+      label: shapes[shapeId],
       neighbours: []
     };
     indexedShapes.push(shapesById[shapeId]);
@@ -127,4 +131,26 @@ export function createManifest(shapeset) {
     version,
     shapes: indexedShapes
   };
+}
+
+// Encodes comma seperated list of meshes as 4 bytes per mesh
+// WARNING: uses radix 36 so will brake if there are more than 1295 (36^2-1) shapes
+export function encodeMeshList(meshIds) {
+  return meshIds.map((meshId) => {
+    return meshId.split('-').map((shapeId) => {
+      var encodedShapeId = parseInt(shapeId, 10).toString(36);
+      if (encodedShapeId.length < 2) {
+        return '0' + encodedShapeId;
+      }
+      return encodedShapeId;
+    }).join('')
+  }).join('');
+}
+
+export function decodeMeshList(encodedMeshIds) {
+  return encodedMeshIds.match(/.{4}/g).map((encodedMeshId) => {
+      return parseInt(encodedMeshId.slice(0, 2), 36) +
+      '-' +
+      parseInt(encodedMeshId.slice(2, 4), 36);
+  });
 }

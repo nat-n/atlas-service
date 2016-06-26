@@ -11,7 +11,7 @@ const dir_scenejs = path.resolve(dir_client, 'vendor/scenejs');
 const dir_build   = path.resolve(dir_client, 'dist');
 
 module.exports = {
-  entry: path.resolve(dir_js, 'main.js'),
+  entry: path.resolve(dir_js, 'main.jsx'),
   output: {
     path: dir_build,
     filename: 'bundle.js'
@@ -24,7 +24,8 @@ module.exports = {
       { test: dir_js, loader: 'babel-loader' },
       { test: /\.css$/, loader: "style-loader!css-loader" },
       { test: /\.png$/, loader: "url-loader?limit=100000" },
-      { test: /\.jpg$/, loader: "file-loader" }
+      { test: /\.jpg$/, loader: "file-loader" },
+      { test: /\.scss$/, loaders: ["style", "css", "sass"] }
     ]
   },
   plugins: [
