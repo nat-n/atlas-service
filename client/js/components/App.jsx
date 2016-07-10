@@ -5,7 +5,7 @@ import SceneControls from './SceneControls.jsx'
 
 const App = props => (
   <div>
-    <SceneCanvas sceneId="scene-1"/>
+    <SceneThree sceneId="scene-1" width={600} height={600}/>
     <SceneControls sceneId="scene-1"/>
   </div>
 );

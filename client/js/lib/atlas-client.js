@@ -31,8 +31,16 @@ class Region {
     this.visible  = visible;
     this.color    = [0.5, 0.5, 0.5, 1];
     this._client  = client;
-    this.asMesh  = dataRequest || this._initData(); // .then??
+    this.asMesh   = dataRequest || this._initData(); // .then??
     this.meshes   = [];
+    this.isEmpty  = !this.shapes.length;
+    this.ready    = false;
+
+    this.asMesh.then((mesh) => {
+      this.ready = true;
+      this.mesh = mesh
+      return this.mesh;
+    });
   }
 
   _initData() {
@@ -40,7 +48,7 @@ class Region {
       return Promise.resolve({
         faces: [],
         vertex_normals: [],
-        vertex_posit: []
+        vertex_positions: []
       });
     }
 

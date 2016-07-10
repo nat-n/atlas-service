@@ -11,7 +11,7 @@ const dir_scenejs = path.resolve(dir_client, 'vendor/scenejs');
 const dir_build   = path.resolve(dir_client, 'dist');
 
 module.exports = {
-  entry: path.resolve(dir_js, 'main.jsx'),
+  entry: ['babel-polyfill', path.resolve(dir_js, 'main.jsx')],
   output: {
     path: dir_build,
     filename: 'bundle.js'
